@@ -6,7 +6,7 @@ module Ftp
 
     private def open_server_socket : Int
       fd = LibC.socket(LibC::AF_INET, LibC::SOCK_STREAM, 0)
-      raise Errno.new(" [socket] ") if fd < 0
+      raise RuntimeError.from_errno(" [socket] ", Errno.new(fd)) if fd < 0
       fd
     end
 
@@ -18,18 +18,18 @@ module Ftp
 
     private def bind_server_socket(fd : Int, addr_in : LibC::SockaddrIn*) : Nil
       ret = LibC.bind(fd, addr_in.as(LibC::Sockaddr*), sizeof(typeof(addr_in.value)))
-      raise Errno.new(" [bind] ") if ret < 0
+      raise RuntimeError.from_errno(" [bind] ", Errno.new(ret)) if ret < 0
     end
 
     private def mark_as_passive_socket(fd : Int, max_con : Int) : Nil
       ret = LibC.listen(fd, max_con)
-      raise Errno.new(" [listen] ") if ret < 0
+      raise raise RuntimeError.from_errno(" [listen] ", Errno.new(ret)) if ret < 0
     end
 
     private def get_server_config(fd : Int, addr_in : LibC::SockaddrIn*) : Tuple(String, LibC::UInt16T)
       len = UInt32.new(sizeof(typeof(addr_in.value))).as(LibC::SocklenT)
       ret = LibC.getsockname(fd, addr_in.as(LibC::Sockaddr*), pointerof(len))
-      raise Errno.new(" [getsockname] ") if ret < 0
+      raise RuntimeError.from_errno(" [getsockname] ", Errno.new(ret)) if ret < 0
       str = LibC::Char[LibCExtension::INET_ADDRSTRLEN]
       sin_addr = addr_in.value.sin_addr
       ip = String.new LibC.inet_ntop(LibC::AF_INET, pointerof(sin_addr), str, LibCExtension::INET_ADDRSTRLEN)
